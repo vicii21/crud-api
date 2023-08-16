@@ -1,0 +1,1 @@
+CREATE DATABASE products_viktor_db;
