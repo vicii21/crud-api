@@ -9,7 +9,6 @@ import (
 	"net/http"
 	"os"
 	"strconv"
-	"time"
 
 	"github.com/gorilla/mux"
 	"github.com/joho/godotenv"
@@ -93,12 +92,11 @@ func getAllProduct() ([]models.Product, error) {
 func createProduct(product models.Product) int64 {
 	db := createConnection()
 	defer db.Close()
-	stmt := `INSERT INTO product(name, short_description, description, price, quantity, category_id, created, updated) VALUES($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id`
+	stmt := `INSERT INTO product(name, short_description, description, price, quantity, category_id) VALUES($1, $2, $3, $4, $5, $6) RETURNING id`
 
 	var id int64
 
-	updatedAt := time.Date(1970, 1, 1, 00, 00, 00, 00, time.UTC)
-	err := db.QueryRow(stmt, product.Name, product.ShortDesc, product.Desc, product.Price, product.Quantity, product.CategoryID, time.Now(), updatedAt).Scan(&id)
+	err := db.QueryRow(stmt, product.Name, product.ShortDesc, product.Desc, product.Price, product.Quantity, product.CategoryID).Scan(&id)
 	if err != nil {
 		log.Fatalf("Unable to execute the query. %v", err)
 	}
@@ -109,9 +107,9 @@ func createProduct(product models.Product) int64 {
 func updateProduct(id int64, product models.Product) int64 {
 	db := createConnection()
 	defer db.Close()
-	stmt := `UPDATE product SET name=$2, short_description=$3, description=$4, price=$5, quantity=$6, updated=$7 WHERE id=$1`
+	stmt := `UPDATE product SET name=$2, short_description=$3, description=$4, price=$5, quantity=$6 WHERE id=$1`
 
-	row, err := db.Exec(stmt, id, product.Name, product.ShortDesc, product.Desc, product.Price, product.Quantity, time.Now())
+	row, err := db.Exec(stmt, id, product.Name, product.ShortDesc, product.Desc, product.Price, product.Quantity)
 	if err != nil {
 		log.Fatalf("Unable to execute the query. %v", err)
 	}
@@ -279,12 +277,11 @@ func getAllCategory() ([]models.Category, error) {
 func createCategory(category models.Category) int64 {
 	db := createConnection()
 	defer db.Close()
-	stmt := `INSERT INTO category(category_name, created_at, updated_at) VALUES($1, $2, $3) RETURNING id`
+	stmt := `INSERT INTO category(category_name) VALUES($1) RETURNING id`
 
 	var id int64
 
-	updatedAt := time.Date(1970, 1, 1, 00, 00, 00, 00, time.UTC)
-	err := db.QueryRow(stmt, category.Name, time.Now(), updatedAt).Scan(&id)
+	err := db.QueryRow(stmt, category.Name).Scan(&id)
 	if err != nil {
 		log.Fatalf("Unable to execute the query. %v", err)
 	}
@@ -296,9 +293,9 @@ func createCategory(category models.Category) int64 {
 func updateCategory(id int64, category models.Category) int64 {
 	db := createConnection()
 	defer db.Close()
-	stmt := `UPDATE category SET category_name=$2, updated_at=$3 WHERE id=$1`
+	stmt := `UPDATE category SET category_name=$2 WHERE id=$1`
 
-	result, err := db.Exec(stmt, id, category.Name, time.Now())
+	result, err := db.Exec(stmt, id, category.Name)
 	if err != nil {
 		log.Fatalf("Unable to execute the query. %v", err)
 	}

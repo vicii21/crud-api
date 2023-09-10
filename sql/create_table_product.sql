@@ -5,6 +5,7 @@ CREATE TABLE product(
     description varchar(255) not null,
     price decimal(12,2) not null,
     quantity bigint not null,
-    created timestamp not null,
-    updated timestamp, 
+    created timestamp not null default CURRENT_TIMESTAMP,
+    updated timestamp default CURRENT_TIMESTAMP,
+    category_id bigint
 );
