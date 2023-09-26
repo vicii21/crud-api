@@ -6,6 +6,6 @@ CREATE TABLE product(
     price decimal(12,2) not null,
     quantity bigint not null,
     created timestamp not null default CURRENT_TIMESTAMP,
-    updated timestamp default CURRENT_TIMESTAMP,
-    category_id bigint
+    updated timestamp,
+    category_id bigint references category(id)
 );

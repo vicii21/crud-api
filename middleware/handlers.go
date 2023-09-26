@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"time"
 
 	"github.com/gorilla/mux"
 	"github.com/joho/godotenv"
@@ -92,11 +93,12 @@ func getAllProduct() ([]models.Product, error) {
 func createProduct(product models.Product) int64 {
 	db := createConnection()
 	defer db.Close()
-	stmt := `INSERT INTO product(name, short_description, description, price, quantity, category_id) VALUES($1, $2, $3, $4, $5, $6) RETURNING id`
+	stmt := `INSERT INTO product(name, short_description, description, price, quantity, category_id, updated) VALUES($1, $2, $3, $4, $5, $6, $7) RETURNING id`
 
 	var id int64
 
-	err := db.QueryRow(stmt, product.Name, product.ShortDesc, product.Desc, product.Price, product.Quantity, product.CategoryID).Scan(&id)
+	var time time.Time
+	err := db.QueryRow(stmt, product.Name, product.ShortDesc, product.Desc, product.Price, product.Quantity, product.CategoryID, time).Scan(&id)
 	if err != nil {
 		log.Fatalf("Unable to execute the query. %v", err)
 	}
@@ -107,9 +109,10 @@ func createProduct(product models.Product) int64 {
 func updateProduct(id int64, product models.Product) int64 {
 	db := createConnection()
 	defer db.Close()
-	stmt := `UPDATE product SET name=$2, short_description=$3, description=$4, price=$5, quantity=$6 WHERE id=$1`
+	stmt := `UPDATE product SET name=$2, short_description=$3, description=$4, price=$5, quantity=$6, category_id=$7, updated=$8 WHERE id=$1`
 
-	row, err := db.Exec(stmt, id, product.Name, product.ShortDesc, product.Desc, product.Price, product.Quantity)
+	updatedProduct := time.Now()
+	row, err := db.Exec(stmt, id, product.Name, product.ShortDesc, product.Desc, product.Price, product.Quantity, product.CategoryID, updatedProduct)
 	if err != nil {
 		log.Fatalf("Unable to execute the query. %v", err)
 	}
@@ -154,6 +157,7 @@ func GetProduct(w http.ResponseWriter, r *http.Request) {
 		log.Fatalf("Unable to get product. %v", err)
 	}
 
+	w.Header().Add("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(product)
 }
 
@@ -162,6 +166,7 @@ func GetAllProduct(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Fatalf("Unable to get all products. %v", err)
 	}
+	w.Header().Add("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(products)
 }
 
@@ -180,6 +185,7 @@ func CreateProduct(w http.ResponseWriter, r *http.Request) {
 		Message: "Product successfully added.",
 	}
 
+	w.Header().Add("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(res)
 }
 
@@ -196,6 +202,7 @@ func UpdateProduct(w http.ResponseWriter, r *http.Request) {
 		log.Fatalf("Unable to decode body of the request. %v", err)
 	}
 
+	// product.Updated = time.Now()
 	updatedRows := updateProduct(int64(id), product)
 	msg := fmt.Sprintf("Product successfully updated. Rows affected: %v", updatedRows)
 
@@ -204,6 +211,7 @@ func UpdateProduct(w http.ResponseWriter, r *http.Request) {
 		Message: msg,
 	}
 
+	w.Header().Add("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(res)
 }
 
@@ -222,6 +230,7 @@ func DeleteProduct(w http.ResponseWriter, r *http.Request) {
 		Message: msg,
 	}
 
+	w.Header().Add("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(res)
 }
 
@@ -277,11 +286,11 @@ func getAllCategory() ([]models.Category, error) {
 func createCategory(category models.Category) int64 {
 	db := createConnection()
 	defer db.Close()
-	stmt := `INSERT INTO category(category_name) VALUES($1) RETURNING id`
+	stmt := `INSERT INTO category(category_name, updated_at) VALUES($1, $2) RETURNING id`
 
 	var id int64
-
-	err := db.QueryRow(stmt, category.Name).Scan(&id)
+	var time time.Time
+	err := db.QueryRow(stmt, category.Name, time).Scan(&id)
 	if err != nil {
 		log.Fatalf("Unable to execute the query. %v", err)
 	}
@@ -293,9 +302,10 @@ func createCategory(category models.Category) int64 {
 func updateCategory(id int64, category models.Category) int64 {
 	db := createConnection()
 	defer db.Close()
-	stmt := `UPDATE category SET category_name=$2 WHERE id=$1`
+	stmt := `UPDATE category SET category_name=$2, updated_at=$3 WHERE id=$1`
 
-	result, err := db.Exec(stmt, id, category.Name)
+	updatedCategoryAt := time.Now()
+	result, err := db.Exec(stmt, id, category.Name, updatedCategoryAt)
 	if err != nil {
 		log.Fatalf("Unable to execute the query. %v", err)
 	}
@@ -340,6 +350,7 @@ func GetCategory(w http.ResponseWriter, r *http.Request) {
 		log.Fatalf("Unable to get category. %v", err)
 	}
 
+	w.Header().Add("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(category)
 }
 
@@ -349,6 +360,7 @@ func GetAllCategory(w http.ResponseWriter, r *http.Request) {
 		log.Fatalf("Unable to get all categories. %v", err)
 	}
 
+	w.Header().Add("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(categories)
 }
 
@@ -367,6 +379,7 @@ func CreateCategory(w http.ResponseWriter, r *http.Request) {
 		Message: "Category created successfully.",
 	}
 
+	w.Header().Add("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(res)
 }
 
@@ -382,6 +395,7 @@ func UpdateCategory(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Fatalf("Unable to decode body of the request. %v", err)
 	}
+	// category.UpdatedAt = time.Now()
 	updatedRows := updateCategory(int64(id), category)
 	msg := fmt.Sprintf("Product updated successfully. Rows affected: %v", updatedRows)
 	res := response{
@@ -389,6 +403,7 @@ func UpdateCategory(w http.ResponseWriter, r *http.Request) {
 		Message: msg,
 	}
 
+	w.Header().Add("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(res)
 }
 
@@ -399,12 +414,6 @@ func DeleteCategory(w http.ResponseWriter, r *http.Request) {
 		log.Fatalf("Unable to convert string to int. %v", err)
 	}
 
-	var category models.Category
-	err = json.NewDecoder(r.Body).Decode(&category)
-	if err != nil {
-		log.Fatalf("Unable to decode body of the request. %v", err)
-	}
-
 	deletedRows := deleteCategory(int64(id))
 	msg := fmt.Sprintf("Product deleted successfully. Rows affected: %v", deletedRows)
 	res := response{
@@ -412,5 +421,6 @@ func DeleteCategory(w http.ResponseWriter, r *http.Request) {
 		Message: msg,
 	}
 
+	w.Header().Add("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(res)
 }
